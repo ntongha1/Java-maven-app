@@ -15,18 +15,16 @@ pipeline {
                 ])
             }
         }
-        }
 
-        stage("build jar") {
+        stage("Build Jar") {
             steps {
-                script {
-                    echo "building the application for second webhook testing"
-                    echo "This is to test that the webhook integration works fine"
-                    sh 'mvn package'
-                }
+                echo "building the application for second webhook testing"
+                echo "This is to test that the webhook integration works fine"
+                sh 'mvn package'
             }
         }
-        stage("build image") {
+
+        stage("Build Image") {
             steps {
                 script {
                     echo "building the docker image..."
@@ -38,11 +36,11 @@ pipeline {
                 }
             }
         }
-        stage("deploy") {
+
+        stage("Deploy") {
             steps {
-                script {
-                    echo "deploying the application..."
-                }
+                echo "deploying the application..."
+                // Add your deployment commands here
             }
         }
     }
