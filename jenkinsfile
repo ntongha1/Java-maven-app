@@ -7,7 +7,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'jenkins-jobs', 
-                    url: "https://github.com/BlaqSmyth/java-maven-app.git",
+                    url: "https://github.com/ntongha1/Java-maven-app.git",
                 sh 'ls -la' 
             }
         }
