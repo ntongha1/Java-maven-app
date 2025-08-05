@@ -24,14 +24,24 @@ pipeline {
             }
         }
 
+
         stage("Build Image") {
             steps {
                 script {
-                    echo "building the docker image..."
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                        sh 'docker build -t ntongha1/demo-app:2.0 .'
-                        sh 'echo $PASS | docker login -u $USER --password-stdin'
-                        sh 'docker push ntongha1/demo-app:2.0'
+                    try {
+                        echo "=== BUILDING DOCKER IMAGE ==="
+                        withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                            sh '''
+                                docker build -t ntongha1/demo-app:2.0 . | tee docker-build.log
+                                cat docker-build.log
+                                echo $PASS | docker login -u $USER --password-stdin
+                                docker push ntongha1/demo-app:2.0
+                            '''
+                        }
+                    } catch (Exception e) {
+                        echo "Docker build failed: ${e}"
+                        sh 'cat docker-build.log || true'
+                        error("Build failed") 
                     }
                 }
             }
