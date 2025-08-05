@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+    tools {
+        maven 'maven-3.9'
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'jenkins-jobs', 
+                    url: "https://github.com/BlaqSmyth/java-maven-app.git",
+                sh 'ls -la' 
+            }
+        }
+
+        stage("build jar") {
+            steps {
+                script {
+                    echo "building the application for second webhook testing"
+                    echo "This is to test that the webhook integration works fine"
+                    sh 'mvn package'
+                }
+            }
+        }
+        stage("build image") {
+            steps {
+                script {
+                    echo "building the docker image..."
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh 'docker build -t ntongha1/demo-app:2.0 .'
+                        sh 'echo $PASS | docker login -u $USER --password-stdin'
+                        sh 'docker push ntongha1/demo-app:2.0'
+                    }
+                }
+            }
+        }
+        stage("deploy") {
+            steps {
+                script {
+                    echo "deploying the application..."
+                }
+            }
+        }
+    }
+}
