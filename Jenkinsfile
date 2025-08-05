@@ -6,10 +6,15 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'jenkins-jobs', 
-                    url: "https://github.com/ntongha1/Java-maven-app.git",
-                sh 'ls -la' 
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'jenkins-jobs']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/ntongha1/Java-maven-app.git'
+                    ]]
+                ])
             }
+        }
         }
 
         stage("build jar") {
