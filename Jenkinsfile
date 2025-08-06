@@ -1,57 +1,85 @@
 pipeline {
     agent any
+
     tools {
-        maven 'maven-3.9'
+        maven 'maven-3.9' // Make sure this is configured in Jenkins Global Tool Configuration
     }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        // Retry pipeline step on agent loss or flaky issues (Jenkinsfile stability)
+        timeout(time: 15, unit: 'MINUTES')
+    }
+
+    environment {
+        DOCKER_IMAGE = 'ntongha1/demo-app:2.0'
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: 'jenkins-jobs']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/ntongha1/Java-maven-app.git'
-                    ]]
-                ])
+                script {
+                    retry(2) {
+                        git branch: 'jenkins-jobs', url: "https://github.com/ntongha1/Java-maven-app.git"
+                    }
+                    sh 'ls -la'
+                }
             }
         }
 
-        stage("Build Jar") {
-            steps {
-                echo "building the application for second webhook testing"
-                echo "This is to test that the webhook integration works fine"
-                sh 'mvn package'
-            }
-        }
-
-
-        stage("Build Image") {
+        stage('Build Jar') {
             steps {
                 script {
-                    try {
-                        echo "=== BUILDING DOCKER IMAGE ==="
-                        withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                            sh '''
-                                docker build -t ntongha1/demo-app:2.0 . | tee docker-build.log
-                                cat docker-build.log
-                                echo $PASS | docker login -u $USER --password-stdin
-                                docker push ntongha1/demo-app:2.0
-                            '''
-                        }
-                    } catch (Exception e) {
-                        echo "Docker build failed: ${e}"
-                        sh 'cat docker-build.log || true'
-                        error("Build failed") 
+                    echo "🔧 Building the application..."
+                    echo "📦 Running Maven package command"
+                    retry(2) {
+                        sh 'mvn clean package -B'
                     }
                 }
             }
         }
 
-        stage("Deploy") {
+        stage('Build Docker Image') {
             steps {
-                echo "deploying the application..."
-                // Add your deployment commands here
+                script {
+                    echo "🐳 Building Docker image..."
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        retry(2) {
+                            sh '''
+                                docker build -t $DOCKER_IMAGE .
+                                echo $PASS | docker login -u $USER --password-stdin
+                                docker push $DOCKER_IMAGE
+                            '''
+                        }
+                    }
+                }
             }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    echo "🚀 Deploying the application..."
+                    // Add actual deploy script/command here
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Build and deployment completed successfully."
+        }
+
+        failure {
+            echo "❌ Build or deployment failed. Please check logs."
+        }
+
+        always {
+            echo "🧼 Cleaning up workspace..."
+            cleanWs()
         }
     }
 }
