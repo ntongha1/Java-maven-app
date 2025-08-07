@@ -2,57 +2,62 @@ pipeline {
     agent any
 
     tools {
-        maven 'maven-3.9' // Make sure this is configured in Jenkins Global Tool Configuration
+        maven 'maven-3.9'
+        jdk 'jdk17' // Must match Java 17 tool name in Jenkins
     }
 
     options {
         timestamps()
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        // Retry pipeline step on agent loss or flaky issues (Jenkinsfile stability)
-        timeout(time: 15, unit: 'MINUTES')
+        timeout(time: 30, unit: 'MINUTES') // Increased timeout
     }
 
     environment {
-        DOCKER_IMAGE = 'ntongha1/demo-app:2.0'
+        DOCKER_IMAGE = 'ntongha1/demo-app:${env.BUILD_ID}'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    retry(2) {
-                        git branch: 'jenkins-jobs', url: "https://github.com/ntongha1/Java-maven-app.git"
-                    }
-                    sh 'ls -la'
-                }
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/jenkins-jobs']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/ntongha1/Java-maven-app.git',
+                        credentialsId: 'github-credentials'
+                    ]]
+                ])
             }
         }
 
-        stage('Build Jar') {
+        stage('Build') {
             steps {
-                script {
-                    echo "🔧 Building the application..."
-                    echo "📦 Running Maven package command"
-                    retry(2) {
-                        sh 'mvn clean package -B'
-                    }
-                }
+                sh 'mvn clean package -B -DskipTests'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Test') {
+            steps {
+                sh 'mvn test -B -DforkCount=1'
+                junit '**/target/surefire-reports/*.xml'
+                archiveArtifacts 'target/*.jar'
+            }
+        }
+
+        stage('Docker Build') {
             steps {
                 script {
-                    echo "🐳 Building Docker image..."
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                        retry(2) {
-                            sh '''
-                                docker build -t $DOCKER_IMAGE .
-                                echo $PASS | docker login -u $USER --password-stdin
-                                docker push $DOCKER_IMAGE
-                            '''
-                        }
+                    withCredentials([usernamePassword(
+                        credentialsId: 'docker-hub-repo',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh """
+                            docker build -t $DOCKER_IMAGE .
+                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                            docker push $DOCKER_IMAGE
+                        """
                     }
                 }
             }
@@ -61,8 +66,14 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    echo "🚀 Deploying the application..."
-                    // Add actual deploy script/command here
+                    sh """
+                        docker stop java-app || true
+                        docker rm java-app || true
+                        docker run -d \\
+                          --name java-app \\
+                          -p 8080:8080 \\
+                          $DOCKER_IMAGE
+                    """
                 }
             }
         }
@@ -70,15 +81,12 @@ pipeline {
 
     post {
         success {
-            echo "✅ Build and deployment completed successfully."
+            echo "✅ Build succeeded! Image: $DOCKER_IMAGE"
         }
-
         failure {
-            echo "❌ Build or deployment failed. Please check logs."
+            echo "❌ Build failed! Check logs."
         }
-
         always {
-            echo "🧼 Cleaning up workspace..."
             cleanWs()
         }
     }
