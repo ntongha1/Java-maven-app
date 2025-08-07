@@ -1,49 +1,35 @@
 pipeline {
     agent any
-
+    tools {
+        maven 'maven-3.9'
+    }
     stages {
-        stage('Build') {
+        stage("build jar") {
             steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-        
-        stage('Test') {
-            steps {
-                sh 'mvn test'
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
+                script {
+                    echo "building the application for second webhook testing"
+                    echo "This is to test that the webhook integration works fine"
+                    sh 'mvn package'
                 }
             }
         }
-        
-        stage('Docker Build') {
+        stage("build image") {
             steps {
                 script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'docker-creds',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
-                        sh '''
-                            echo "$DOCKER_PASS" | docker login -u $DOCKER_USER --password-stdin
-                            docker build -t java-maven-app:latest .
-                            # docker push java-maven-app:latest  # Uncomment if you have a registry
-                        '''
+                    echo "building the docker image..."
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh 'docker build -t ntongha1/demo-app:2.0 .'
+                        sh 'echo $PASS | docker login -u $USER --password-stdin'
+                        sh 'docker push ntongha1/demo-app:2.0'
                     }
                 }
             }
         }
-    }
-    
-    post {
-        failure {
-            echo '❌ Pipeline failed! Check logs above.'
-        }
-        success {
-            echo '✅ Pipeline succeeded!'
+        stage("deploy") {
+            steps {
+                script {
+                    echo "deploying the application..."
+                }
+            }
         }
     }
-}
