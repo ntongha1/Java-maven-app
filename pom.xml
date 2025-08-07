@@ -55,6 +55,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
             <version>${spring-boot.version}</version>
         </dependency>
+             <dependency>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-starter-test</artifactId>
+                 <scope>test</scope>
+             </dependency>
+         </dependencies>
 
         <!-- Updated to JUnit 5 (recommended for Spring Boot 3+) -->
         <dependency>
