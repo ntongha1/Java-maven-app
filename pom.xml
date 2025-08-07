@@ -8,12 +8,19 @@
     <artifactId>java-maven-app</artifactId>
     <version>1.1.0-SNAPSHOT</version>
 
+    <properties>
+        <java.version>17</java.version>
+        <spring-boot.version>3.1.5</spring-boot.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.0.5</version>
+                <version>${spring-boot.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -23,14 +30,20 @@
                 </executions>
             </plugin>
 
-            <!-- to handle any Java version mismatch, add the following configuration for maven-compiler-plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M8</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <argLine>-Xmx512m</argLine>
                 </configuration>
             </plugin>
         </plugins>
@@ -40,7 +53,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>3.0.5</version>
+            <version>${spring-boot.version}</version>
         </dependency>
 
         <dependency>
@@ -50,17 +63,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Consider migrating to JUnit 5 -->
         <dependency>
-            <groupId>net.logstash.logback</groupId>
-            <artifactId>logstash-logback-encoder</artifactId>
-            <version>7.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.annotation</groupId>
-            <artifactId>javax.annotation-api</artifactId>
-            <version>1.3.2</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.9.3</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
-
 </project>
