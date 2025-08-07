@@ -3,18 +3,20 @@ pipeline {
 
     tools {
         maven 'maven-3.9'
-        jdk 'jdk17' // Must match Java 17 tool name in Jenkins
+        // REMOVED jdk declaration since we'll use container's JDK
     }
 
     options {
         timestamps()
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        timeout(time: 30, unit: 'MINUTES') // Increased timeout
+        timeout(time: 30, unit: 'MINUTES')
     }
 
     environment {
         DOCKER_IMAGE = 'ntongha1/demo-app:${env.BUILD_ID}'
+        // Set JAVA_HOME to container's JDK
+        JAVA_HOME = '/opt/java/openjdk'
     }
 
     stages {
@@ -33,7 +35,11 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package -B -DskipTests'
+                sh '''
+                    echo "Using Java:"
+                    java -version
+                    mvn clean package -B -DskipTests
+                '''
             }
         }
 
