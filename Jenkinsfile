@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'maven:3.9'
+            image 'maven:3.9-eclipse-temurin-21'
             args '-v /var/run/docker.sock:/var/run/docker.sock 
                   -v /usr/bin/docker:/usr/bin/docker
                   -v $HOME/.m2:/root/.m2'
@@ -60,11 +60,11 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh '''
+                sh """
                     docker stop java-app || true
                     docker rm java-app || true
                     docker run -d --name java-app -p 8080:8080 $DOCKER_IMAGE
-                '''
+                """
             }
         }
     }
