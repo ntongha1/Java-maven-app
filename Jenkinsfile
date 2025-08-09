@@ -1,19 +1,29 @@
 pipeline {
     agent {
         docker {
-            image 'maven:3.9-eclipse-temurin-21'
-            args '-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker'
+            image 'maven:3.9'
+            args '-v /var/run/docker.sock:/var/run/docker.sock 
+                  -v /usr/bin/docker:/usr/bin/docker
+                  -v $HOME/.m2:/root/.m2'
+            reuseNode true
         }
     }
 
     environment {
-        DOCKER_IMAGE = 'ntongha1/demo-app:${env.BUILD_ID}'
+        DOCKER_IMAGE = 'ntongha1/demo-app:${env.BUILD_NUMBER}'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/jenkins-jobs']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/ntongha1/Java-maven-app.git',
+                        credentialsId: 'github-credentials'
+                    ]]
+                ])
             }
         }
 
@@ -26,7 +36,7 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'mvn test -B -DforkCount=1'
-                junit '**/target/surefire-reports/*.xml'
+                junit 'target/surefire-reports/*.xml'
             }
         }
 
