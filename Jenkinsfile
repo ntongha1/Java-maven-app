@@ -60,11 +60,11 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh """
+                sh '''
                     docker stop java-app || true
                     docker rm java-app || true
                     docker run -d --name java-app -p 8080:8080 $DOCKER_IMAGE
-                """
+                '''
             }
         }
     }
