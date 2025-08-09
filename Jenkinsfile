@@ -51,24 +51,27 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'docker-hub-repo',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
-                        sh """
-                            docker build -t $DOCKER_IMAGE .
-                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                            docker push $DOCKER_IMAGE
-                        """
-                    }
+    stage('Docker Build') {
+        steps {
+            script {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-repo',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    // Use single quotes to avoid Groovy interpolation
+                    sh '''
+                        docker build -t $DOCKER_IMAGE .
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push $DOCKER_IMAGE
+                    '''
                 }
             }
         }
+    }
 
+        
+        
         stage('Deploy') {
             steps {
                 script {
