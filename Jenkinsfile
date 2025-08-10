@@ -1,10 +1,8 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9'
-            args '-v /var/run/docker.sock:/var/run/docker.sock -u root'
-            reuseNode true
-        }
+    agent any
+
+    tools {
+        maven 'maven-3.9'
     }
 
     environment {
@@ -29,15 +27,18 @@ pipeline {
             }
         }
 
-        stage('Verify Docker') {
+        stage('Verify Docker Access') {
             steps {
-                sh '''
-                    echo "Current user: $(whoami)"
-                    echo "Docker info:"
-                    docker info
-                    echo "Docker socket permissions:"
-                    ls -l /var/run/docker.sock
-                '''
+                script {
+                    sh '''
+                        echo "Current user: $(whoami)"
+                        echo "User groups: $(groups)"
+                        echo "Docker version:"
+                        docker version || true
+                        echo "Docker socket permissions:"
+                        ls -l /var/run/docker.sock || true
+                    '''
+                }
             }
         }
 
@@ -95,7 +96,7 @@ pipeline {
         }
         failure {
             echo "❌ Pipeline failed! Check logs for details."
-            sh 'docker ps -a'  // Debug container status
+            sh 'docker ps -a || true'  // Debug container status
         }
         always {
             cleanWs()
