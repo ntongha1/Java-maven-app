@@ -1,10 +1,9 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9'
-            args '-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -v $HOME/.m2:/root/.m2'
-            reuseNode true
-        }
+    agent any
+
+    tools {
+        maven 'maven-3.9'
+        // No JDK needed as Maven image includes it
     }
 
     environment {
@@ -17,7 +16,7 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/main']],  // Changed from jenkins-jobs to main
+                    branches: [[name: '*/main']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/ntongha1/Java-maven-app.git',
                         credentialsId: 'github-credentials'
