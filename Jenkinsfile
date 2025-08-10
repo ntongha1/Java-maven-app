@@ -15,9 +15,9 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/jenkins-jobs']],  // Changed to match your actual branch
+                    branches: [[name: '*/jenkins-jobs']],
                     extensions: [
-                        [$class: 'LocalBranch', localBranch: 'jenkins-jobs']  // Ensures local branch exists
+                        [$class: 'LocalBranch', localBranch: 'jenkins-jobs']
                     ],
                     userRemoteConfigs: [[
                         url: 'https://github.com/ntongha1/Java-maven-app.git',
@@ -49,11 +49,11 @@ pipeline {
                         usernameVariable: 'DOCKER_USER',
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
-                        sh """
+                        sh '''
                             docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE} .
-                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin ${DOCKER_REGISTRY}
+                            echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin ${DOCKER_REGISTRY}
                             docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
-                        """
+                        '''
                     }
                 }
             }
@@ -62,14 +62,14 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    sh """
+                    sh '''
                         docker stop java-app || true
                         docker rm java-app || true
                         docker run -d \
                           --name java-app \
                           -p 8080:8080 \
                           ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
-                    """
+                    '''
                 }
             }
         }
