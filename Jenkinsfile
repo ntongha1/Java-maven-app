@@ -33,10 +33,13 @@ pipeline {
                     sh '''
                         echo "Current user: $(whoami)"
                         echo "User groups: $(groups)"
-                        echo "Docker version:"
-                        docker version || true
                         echo "Docker socket permissions:"
-                        ls -l /var/run/docker.sock || true
+                        ls -l /var/run/docker.sock
+                        echo "Temporarily fixing permissions..."
+                        sudo chmod 777 /var/run/docker.sock || true
+                        echo "Updated permissions:"
+                        ls -l /var/run/docker.sock
+                        docker version
                     '''
                 }
             }
@@ -88,6 +91,16 @@ pipeline {
                 }
             }
         }
+
+        stage('Reset Permissions') {
+            steps {
+                sh '''
+                    echo "Resetting Docker socket permissions..."
+                    sudo chmod 660 /var/run/docker.sock || true
+                    sudo chown root:docker /var/run/docker.sock || true
+                '''
+            }
+        }
     }
 
     post {
@@ -96,7 +109,7 @@ pipeline {
         }
         failure {
             echo "❌ Pipeline failed! Check logs for details."
-            sh 'docker ps -a || true'  // Debug container status
+            sh 'docker ps -a || true'
         }
         always {
             cleanWs()
