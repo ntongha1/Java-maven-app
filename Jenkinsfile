@@ -1,8 +1,10 @@
 pipeline {
-    agent any
-
-    tools {
-        maven 'maven-3.9'
+    agent {
+        docker {
+            image 'maven:3.9'
+            args '-v /var/run/docker.sock:/var/run/docker.sock -u root'
+            reuseNode true
+        }
     }
 
     environment {
@@ -24,6 +26,18 @@ pipeline {
                         credentialsId: 'github-credentials'
                     ]]
                 ])
+            }
+        }
+
+        stage('Verify Docker') {
+            steps {
+                sh '''
+                    echo "Current user: $(whoami)"
+                    echo "Docker info:"
+                    docker info
+                    echo "Docker socket permissions:"
+                    ls -l /var/run/docker.sock
+                '''
             }
         }
 
@@ -81,6 +95,7 @@ pipeline {
         }
         failure {
             echo "❌ Pipeline failed! Check logs for details."
+            sh 'docker ps -a'  // Debug container status
         }
         always {
             cleanWs()
