@@ -1,8 +1,6 @@
 import com.example.Application;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-//import org.junit.Test;
-//import static org.junit.Assert.*;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 public class AppTest {
 
@@ -15,4 +13,3 @@ public class AppTest {
         assertEquals("OK", result);
     }
 }
-
