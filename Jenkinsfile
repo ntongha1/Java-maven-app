@@ -3,7 +3,6 @@ pipeline {
 
     tools {
         maven 'maven-3.9'
-        // No JDK needed as Maven image includes it
     }
 
     environment {
@@ -16,7 +15,10 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/main']],
+                    branches: [[name: '*/jenkins-jobs']],  // Changed to match your actual branch
+                    extensions: [
+                        [$class: 'LocalBranch', localBranch: 'jenkins-jobs']  // Ensures local branch exists
+                    ],
                     userRemoteConfigs: [[
                         url: 'https://github.com/ntongha1/Java-maven-app.git',
                         credentialsId: 'github-credentials'
